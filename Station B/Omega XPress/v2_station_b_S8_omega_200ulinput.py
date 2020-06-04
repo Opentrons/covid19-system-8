@@ -6,7 +6,7 @@ import threading
 from time import sleep
 
 metadata = {
-    'protocolName': 'Version 1 S14 Station B MagMax (200µl sample input)',
+    'protocolName': 'Version 2 S8 Station B MagMax (200µl sample input)',
     'author': 'Nick <ndiehl@opentrons.com',
     'apiLevel': '2.3'
 }
@@ -211,7 +211,7 @@ resuming.')
                               new_tip='never')
                 if t == 0:
                     m300.air_gap(20)
-            m300.mix(5, 200, well)
+            m300.mix(10, 200, well)
             m300.blow_out(well.top(-2))
             m300.air_gap(20)
             if park:
@@ -294,7 +294,7 @@ for 2 minutes')
     magdeck.engage(height=magheight)
     ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
 
-    bind(280, park=PARK)
+    bind(285, park=PARK)
     remove_supernatant(500, park=PARK)
     wash(350, wash1, park=PARK)
     wash(350, etoh, park=PARK)
