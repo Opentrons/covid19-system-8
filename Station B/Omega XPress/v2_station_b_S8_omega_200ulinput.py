@@ -295,7 +295,6 @@ for 2 minutes')
     ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
 
     bind(285, park=PARK)
-    remove_supernatant(500, park=PARK)
     wash(350, wash1, park=PARK)
     wash(350, etoh, park=PARK)
     wash(350, etoh, park=PARK)
