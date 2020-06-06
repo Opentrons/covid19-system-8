@@ -52,7 +52,7 @@ def run(ctx):
                for slot in ['3', '6', '8', '9', '10']]
     if PARK:
         parkingrack = ctx.load_labware(
-            'opentrons_96_tiprack_300ul', '7', 'empty tiprack for parking')
+            'opentrons_96_tiprack_300ul', '7', '200µl filtertiprack for parking')
         parking_spots = parkingrack.rows()[0][:num_cols]
     else:
         tips300.insert(0, ctx.load_labware('opentrons_96_tiprack_300ul', '7',
