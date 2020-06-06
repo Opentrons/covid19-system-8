@@ -6,14 +6,14 @@ import threading
 from time import sleep
 
 metadata = {
-    'protocolName': 'Version 1 S8 Station B Perkin Elmer Chemagen (200µl sample input)',
+    'protocolName': 'Version 2 S8 Station B Perkin Elmer Chemagen (200µl sample input)',
     'author': 'Nick <ndiehl@opentrons.com',
     'apiLevel': '2.3'
 }
 
 NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
 ELUTION_VOL = 50
-STARTING_VOL = 420
+STARTING_VOL = 620
 TIP_TRACK = False
 PARK = True
 
@@ -52,7 +52,7 @@ def run(ctx):
                for slot in ['3', '6', '8', '9', '10']]
     if PARK:
         parkingrack = ctx.load_labware(
-            'opentrons_96_tiprack_300ul', '7', 'empty tiprack for parking')
+            'opentrons_96_tiprack_300ul', '7', '200µl filtertiprack for parking')
         parking_spots = parkingrack.rows()[0][:num_cols]
     else:
         tips300.insert(0, ctx.load_labware('opentrons_96_tiprack_300ul', '7',
@@ -65,8 +65,8 @@ def run(ctx):
     magdeck = ctx.load_module('magdeck', '4')
     magdeck.disengage()
     magheight = 13.7
-    magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
-    # magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
+    # magplate = magdeck.load_labware('nest_96_wellplate_2ml_deep')
+    magplate = magdeck.load_labware('biorad_96_wellplate_200ul_pcr')
     tempdeck = ctx.load_module('Temperature Module Gen2', '1')
     flatplate = tempdeck.load_labware(
                 'opentrons_96_aluminumblock_nest_wellplate_100ul',)
@@ -76,7 +76,7 @@ def run(ctx):
         'nest_12_reservoir_15ml', '2', 'reagent reservoir 2')
     res1 = ctx.load_labware(
         'nest_12_reservoir_15ml', '5', 'reagent reservoir 1')
-    binding_buffer = res1.wells()[:6]
+    binding_buffer = res1.wells()[:8]
     elution_solution = res1.wells()[-1]
     wash3 = res2.wells()[:4]
     wash4 = res2.wells()[4:8]
@@ -195,18 +195,25 @@ resuming.')
 
     def bind(vol, park=True):
         # add bead binding buffer and mix samples
+        latest_chan = -1
         for i, (well, spot) in enumerate(zip(mag_samples_m, parking_spots)):
-            source = binding_buffer[i//(12//len(binding_buffer))]
+            # source = binding_buffer[i//(12//len(binding_buffer))]
             if park:
                 pick_up(m300, spot)
             else:
                 pick_up(m300)
-            for _ in range(5):
-                m300.aspirate(180, source.bottom(0.5))
-                m300.dispense(180, source.bottom(5))
-            num_trans = math.ceil(vol/210)
+            num_trans = math.ceil(vol/200)
             vol_per_trans = vol/num_trans
+            asp_per_chan = 14000//(vol_per_trans*8)
             for t in range(num_trans):
+                chan_ind = int((i*num_trans + t)//asp_per_chan)
+                print(chan_ind)
+                source = binding_buffer[chan_ind]
+                if chan_ind > latest_chan:  # mix if accessing new channel
+                    for _ in range(5):
+                        m300.aspirate(180, source.bottom(0.5))
+                        m300.dispense(180, source.bottom(5))
+                    latest_chan = chan_ind
                 if m300.current_volume > 0:
                     m300.dispense(m300.current_volume, source.top())  # void air gap if necessary
                 m300.transfer(vol_per_trans, source, well.top(), air_gap=20,
@@ -317,10 +324,12 @@ for 2 minutes')
     magdeck.engage(height=magheight)
     ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
 
-    bind(620, park=PARK)
+    bind(1000, park=PARK)
     wash(500, wash3, park=PARK)
     wash(500, wash4, park=PARK)
-    wash(500, wash5, park=PARK, resuspend=False)
+    # wash(500, wash5, park=PARK, resuspend=False)
     magdeck.disengage()
+    ctx.delay(minutes=10, msg='Allowing the Magnetic Bead/NAComplex to air-dry \
+at room temperature for approx. 10 minutes.')
 
     elute(ELUTION_VOL, park=PARK)
