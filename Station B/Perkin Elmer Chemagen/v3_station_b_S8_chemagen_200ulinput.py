@@ -6,7 +6,7 @@ import threading
 from time import sleep
 
 metadata = {
-    'protocolName': 'Version 2 S8 Station B Perkin Elmer Chemagen (200µl sample input)',
+    'protocolName': 'Version 3 S8 Station B Perkin Elmer Chemagen (200µl sample input)',
     'author': 'Nick <ndiehl@opentrons.com',
     'apiLevel': '2.3'
 }
@@ -199,7 +199,7 @@ resuming.')
         for i, (well, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             # source = binding_buffer[i//(12//len(binding_buffer))]
             if park:
-                pick_up(m300, spot)
+                pick_up(m300, loc=spot)
             else:
                 pick_up(m300)
             num_trans = math.ceil(vol/200)
@@ -207,7 +207,6 @@ resuming.')
             asp_per_chan = 14000//(vol_per_trans*8)
             for t in range(num_trans):
                 chan_ind = int((i*num_trans + t)//asp_per_chan)
-                print(chan_ind)
                 source = binding_buffer[chan_ind]
                 if chan_ind > latest_chan:  # mix if accessing new channel
                     for _ in range(5):
