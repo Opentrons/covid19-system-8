@@ -6,13 +6,13 @@ import threading
 from time import sleep
 
 metadata = {
-    'protocolName': 'Version 1 S9 Station B BP Purebase (400µl sample input)',
+    'protocolName': 'Version 2 S8 Station B BP Purebase (400µl sample input)',
     'author': 'Nick <ndiehl@opentrons.com',
     'apiLevel': '2.3'
 }
 
 NUM_SAMPLES = 8  # start with 8 samples, slowly increase to 48, then 94 (max is 94)
-SAMPLE_VOL = 400
+SAMPLE_VOL = 420
 ELUTION_VOL = 40
 TIP_TRACK = False
 PARK = False
@@ -176,7 +176,7 @@ resuming.')
         for i, (well, spot) in enumerate(zip(mag_samples_m, parking_spots)):
             source = binding_buffer[i//(12//len(binding_buffer))]
             pick_up(m300)
-            for _ in range(5):
+            for _ in range(10):
                 m300.aspirate(180, source.bottom(0.5))
                 m300.dispense(180, source.bottom(5))
             num_trans = math.ceil(vol/210)
@@ -188,7 +188,7 @@ resuming.')
                               new_tip='never')
                 if t == 0:
                     m300.air_gap(20)
-            m300.mix(5, 200, well)
+            m300.mix(10, 200, well)
             m300.blow_out(well.top(-2))
             m300.air_gap(20)
             if park:
@@ -197,7 +197,7 @@ resuming.')
                 drop(m300)
 
         magdeck.engage(height=magheight)
-        ctx.delay(minutes=2, msg='Incubating on MagDeck for 2 minutes.')
+        ctx.delay(minutes=7, msg='Incubating on MagDeck for 7 minutes.')
 
         # remove initial supernatant
         remove_supernatant(vol+SAMPLE_VOL, park=park)
@@ -227,10 +227,15 @@ resuming.')
             else:
                 drop(m300)
 
+        delay_time = 6
+        if mix_reps == 0:
+            delay_time = 5
+        ctx.delay(minutes=delay_time, msg='Incubating off magnets for {} minutes.'.format(delay_time))
         magdeck.engage(height=magheight)
-        ctx.delay(minutes=5, msg='Incubating on MagDeck for 5 minutes.')
+        ctx.delay(minutes=delay_time, msg='Incubating on MagDeck for {} minutes.'.format(delay_time))
 
         remove_supernatant(wash_vol, park=park)
+
 
     def elute(vol, park=True):
         # resuspend beads in elution
@@ -241,7 +246,7 @@ resuming.')
             m300.aspirate(40, water)
             m300.move_to(m.center())
             m300.dispense(40, loc)
-            m300.mix(10, 30, loc)
+            m300.mix(15, 30, loc)
             m300.blow_out(m.bottom(5))
             m300.air_gap(20)
             if park:
@@ -249,8 +254,8 @@ resuming.')
             else:
                 drop(m300)
 
-        ctx.delay(minutes=2, msg='Incubating off magnet at room temperature \
-for 2 minutes')
+        ctx.delay(minutes=10, msg='Incubating off magnet at room temperature \
+for 10 minutes')
         magdeck.engage(height=magheight)
         ctx.delay(minutes=2, msg='Incubating on magnet at room temperature \
 for 2 minutes')
@@ -269,12 +274,14 @@ for 2 minutes')
             m300.drop_tip()
 
     bind(420, park=PARK)
-    wash(500, wash1, 20, park=PARK)
-    wash(500, wash2, 20, park=PARK)
-    wash(800, etoh, 4, park=PARK)
+    wash(500, wash1, 10, park=PARK)
+    wash(500, wash2, 10, park=PARK)
+    wash(500, etoh, 0, park=PARK)
 
     magdeck.disengage()
-    ctx.delay(minutes=5, msg='Airdrying beads at room temperature for 5 \
+    ctx.delay(minutes=10, msg='Airdrying beads at room temperature for 10 \
 minutes.')
+    ctx.home()
+    ctx.pause('Please check that all ethanol has evaporated before continuing.')
 
-    elute(40, park=PARK)
+    elute(50, park=PARK) # 50 uL elution volume
